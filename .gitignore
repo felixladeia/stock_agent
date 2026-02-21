@@ -1,0 +1,7 @@
+*.log
+*.gz
+*.json
+*.pyc
+*.old
+node_modules
+.next
