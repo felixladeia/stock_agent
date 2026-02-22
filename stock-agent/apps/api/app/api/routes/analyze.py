@@ -1,49 +1,74 @@
 from fastapi import APIRouter
 from app.agent.schemas import AnalyzeRequest, AnalyzeResponse, EvidenceItem, RiskBlock, Provenance
+from app.tools.market_data import get_ohlcv
+from app.tools.indicators import compute_indicators
+from app.services.signal_engine import generate_signal
 
 router = APIRouter()
 
+
 @router.post("/analyze", response_model=AnalyzeResponse)
 def analyze(req: AnalyzeRequest) -> AnalyzeResponse:
-    # Step 1: hardcoded stub (but schema-valid)
-    # Later: replace with tool pipeline (market_data -> indicators -> news/RAG -> risk -> format)
     ticker = req.ticker.upper()
 
-    evidence = [
-        EvidenceItem(
-            type="note",
-            title="Stub analysis",
-            source="system",
-            snippet="This is a placeholder response. Next step: replace with real OHLCV + indicators + RAG."
-        )
+    # 1️⃣ Fetch data
+    df = get_ohlcv(ticker)
+
+    # 2️⃣ Compute indicators
+    df = compute_indicators(df)
+
+    # 3️⃣ Generate signal
+    result = generate_signal(df)
+
+    signal = result["signal"]
+    confidence = result["confidence"]
+    features = result["features"]
+
+    # 4️⃣ Build thesis
+    thesis = [
+        f"RSI(14): {features['rsi_14']:.2f}",
+        f"MACD histogram: {features['macd_hist']:.4f}",
+        f"20-day volatility: {features['vol_20']:.4f}",
     ]
 
+    # 5️⃣ Risk logic
     risk = RiskBlock(
         stop_loss_pct=min(0.05, req.constraints.max_daily_loss_pct * 2.5),
         take_profit_pct=0.10,
         invalidators=[
-            "Major unexpected news contradicts thesis",
-            "Volatility spike beyond historical band"
+            "Momentum reversal in MACD histogram",
+            "RSI crosses neutral band",
         ],
     )
 
     prov = Provenance(
-        tool_calls=[],
+        tool_calls=[
+            {"tool": "get_ohlcv", "ticker": ticker},
+            {"tool": "compute_indicators"},
+            {"tool": "generate_signal"},
+        ],
         retrieved_doc_ids=[],
-        data_windows={"prices": None, "news_lookback_days": None},
+        data_windows={
+            "lookback_years": 2,
+            "interval": "1d",
+        },
     )
 
     return AnalyzeResponse(
         ticker=ticker,
-        signal="HOLD",
-        confidence=0.55,
+        signal=signal,
+        confidence=confidence,
         horizon_days=req.horizon_days,
-        thesis_bullets=[
-            f"{ticker}: Stub thesis bullet #1 (replace with numeric + news evidence).",
-            "Stub thesis bullet #2: risk-aware, but not data-driven yet.",
+        thesis_bullets=thesis,
+        numeric_features=features,
+        evidence=[
+            EvidenceItem(
+                type="numeric",
+                title="Technical indicators",
+                source="indicator_engine",
+                snippet="Signal derived from RSI, MACD, and rolling volatility.",
+            )
         ],
-        numeric_features={"stub_feature": 0.0},
-        evidence=evidence,
         risk=risk,
         provenance=prov,
     )

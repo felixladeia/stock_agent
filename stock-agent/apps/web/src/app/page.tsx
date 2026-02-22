@@ -2,24 +2,41 @@
 
 import React, { useState } from "react";
 import { analyze } from "../lib/api";
+import { fetchOhlcv } from "../lib/ohlcv";
+import { fetchIndicators } from "../lib/indicators";
 import type { AnalyzeResponse } from "../lib/schemas";
+import type { OhlcvResponse } from "../lib/ohlcv";
+import type { IndicatorsResponse } from "../lib/indicators";
+import { ProChart } from "../components/ProChart";
 
 export default function HomePage() {
   const [ticker, setTicker] = useState("AAPL");
   const [horizon, setHorizon] = useState(20);
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AnalyzeResponse | null>(null);
+  const [ohlcv, setOhlcv] = useState<OhlcvResponse | null>(null);
+  const [indicators, setIndicators] = useState<IndicatorsResponse | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   async function onRun() {
     setLoading(true);
     setErr(null);
+
     try {
       const out = await analyze(ticker, horizon);
       setData(out);
+
+      const candles = await fetchOhlcv(out.ticker, 2);
+      setOhlcv(candles);
+
+      const indicators = await fetchIndicators(out.ticker, 2);
+      setIndicators(indicators);
+
     } catch (e: any) {
       setErr(e?.message ?? String(e));
       setData(null);
+      setOhlcv(null);
+      setIndicators(null);
     } finally {
       setLoading(false);
     }
@@ -65,6 +82,8 @@ export default function HomePage() {
             <span>Horizon: {data.horizon_days}d</span>
           </div>
 
+
+          {ohlcv && indicators && <ProChart ohlcv={ohlcv} ind={indicators} />}
           <h3>Thesis</h3>
           <ul>
             {data.thesis_bullets.map((b, i) => <li key={i}>{b}</li>)}
@@ -81,7 +100,6 @@ export default function HomePage() {
               {data.risk.invalidators.map((x, i) => <li key={i}>{x}</li>)}
             </ul>
           </details>
-
           <h3>Raw JSON</h3>
           <pre style={{ overflowX: "auto", background: "#f7f7f7", padding: 12, borderRadius: 8 }}>
             {JSON.stringify(data, null, 2)}
