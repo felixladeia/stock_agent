@@ -83,7 +83,7 @@ export default function HomePage() {
           </div>
 
 
-          {ohlcv && indicators && <ProChart ohlcv={ohlcv} ind={indicators} />}
+          {ohlcv && indicators && <ProChart ohlcv={ohlcv} ind={indicators} analysis={data} />}
           <h3>Thesis</h3>
           <ul>
             {data.thesis_bullets.map((b, i) => <li key={i}>{b}</li>)}
