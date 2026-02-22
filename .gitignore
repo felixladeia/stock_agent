@@ -3,5 +3,9 @@
 *.json
 *.pyc
 *.old
-node_modules
-.next
+stock-agent/apps/api/.venv/*
+stock-agent/apps/web/node_modules/*
+stock-agent/apps/web/.next/*
+.next/*
+node_modules/*
+dist/*
