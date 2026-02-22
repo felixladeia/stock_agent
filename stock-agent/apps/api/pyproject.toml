@@ -1,12 +1,50 @@
 [project]
 name = "stock-agent-api"
 version = "0.1.0"
+description = "FastAPI backend for Stock Agent (OHLCV, indicators, backtesting, RAG-ready)."
+readme = "../../README.md"
 requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Stock Agent Contributors" }]
+
 dependencies = [
-  "fastapi>=0.110",
-  "uvicorn[standard]>=0.27",
-  "pydantic>=2.6",
+  "fastapi>=0.110,<1.0",
+  "uvicorn[standard]>=0.27,<1.0",
+  "pydantic>=2.6,<3.0",
+
+  # Data + indicators
+  "pandas>=2.1,<3.0",
+  "numpy>=1.26,<3.0",
+  "yfinance>=0.2.40,<1.0",
+  "pandas-ta>=0.3.14b0,<1.0",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.0,<9.0",
+  "httpx>=0.27,<1.0",
+  "ruff>=0.6,<1.0",
 ]
 
 [tool.uv]
-dev-dependencies = ["pytest>=8.0", "httpx>=0.27"]
+# If you use `uv`, install dev deps via: `uv sync --extra dev`
+dev-dependencies = [
+  "pytest>=8.0,<9.0",
+  "httpx>=0.27,<1.0",
+  "ruff>=0.6,<1.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["app/tests"]
+pythonpath = ["."]
+addopts = "-q"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+select = ["E", "F", "I"]
+ignore = []
+exclude = [".venv", "__pycache__", ".pytest_cache", ".ruff_cache"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app"]
